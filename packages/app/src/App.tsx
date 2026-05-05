@@ -1,13 +1,44 @@
-import React from 'react';
-import { createApp } from '@backstage/frontend-defaults';
-import { IntegracionesPage } from './components/integraciones/IntegracionesPage';
+import React, { useEffect, useState } from 'react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { BrowserRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
-// Crear la app (sin usar .createRoot aquí)
-const app = createApp({
-  features: [], // Sin plugins para que no salga el catálogo
-});
-
-// Exportar un COMPONENTE React, NO el elemento
 export default function App() {
-  return <IntegracionesPage />;
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('themeMode') as 'light' | 'dark';
+    if (savedTheme) {
+      setMode(savedTheme);
+    }
+    
+    const handleThemeChange = (e: CustomEvent) => {
+      setMode(e.detail.theme);
+    };
+    
+    window.addEventListener('theme-change', handleThemeChange as EventListener);
+    return () => window.removeEventListener('theme-change', handleThemeChange as EventListener);
+  }, []);
+
+  const theme = createTheme({
+    palette: {
+      mode: mode,
+      primary: {
+        main: '#1976d2',
+      },
+      secondary: {
+        main: '#dc004e',
+      },
+    },
+  });
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </ThemeProvider>
+  );
 }

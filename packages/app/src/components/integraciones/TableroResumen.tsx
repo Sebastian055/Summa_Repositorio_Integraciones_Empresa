@@ -31,7 +31,7 @@ export const TableroResumen = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          'http://localhost:7008/api/integraciones/integraciones/stats/resumen',
+          'http://localhost:7009/api/integraciones/integraciones/stats/resumen',
         );
         if (!response.ok) throw new Error('Error al cargar estadísticas');
         const data = await response.json();

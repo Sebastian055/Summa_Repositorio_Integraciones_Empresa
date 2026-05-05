@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { IntegracionesPage } from './components/integraciones/IntegracionesPage';
+import { GithubCallback } from './pages/GithubCallback';
 
 export const AppRoutes = () => {
   return (
@@ -8,7 +9,8 @@ export const AppRoutes = () => {
       {/* Redirige la raíz a integraciones */}
       <Route path="/" element={<Navigate to="/integraciones" replace />} />
       <Route path="/integraciones" element={<IntegracionesPage />} />
-      {/* Opcional: si quieres mantener otras rutas, añádelas aquí */}
+      {/* Ruta para el callback de GitHub */}
+      <Route path="/auth/github/callback" element={<GithubCallback />} />
     </Routes>
   );
 };
