@@ -12,13 +12,8 @@ export const GithubCallback = () => {
     const error = params.get('error');
     
     if (error) {
-      // Error de GitHub
-      if (window.opener) {
-        window.opener.postMessage({ type: 'github-auth-error', error: error }, '*');
-        window.close();
-      } else {
-        navigate('/integraciones');
-      }
+      // Si hay error, redirigir a configuraciones
+      navigate('/integraciones?tab=configuraciones');
       return;
     }
     
@@ -28,8 +23,10 @@ export const GithubCallback = () => {
         .then(res => res.json())
         .then(data => {
           if (data.success) {
+            // Guardar token
             localStorage.setItem('github_token', data.token);
-            // Cerrar ventana emergente y enviar mensaje
+            
+            // Si hay ventana padre (popup), cerrarla
             if (window.opener) {
               window.opener.postMessage({
                 type: 'github-auth-success',
@@ -38,24 +35,15 @@ export const GithubCallback = () => {
               }, '*');
               window.close();
             } else {
-              navigate('/integraciones');
-            }
-          } else {
-            if (window.opener) {
-              window.opener.postMessage({ type: 'github-auth-error', error: data.error }, '*');
-              window.close();
+              // Si no hay popup, redirigir directamente
+              navigate('/integraciones?tab=configuraciones');
             }
           }
         })
         .catch(err => {
-          if (window.opener) {
-            window.opener.postMessage({ type: 'github-auth-error', error: err.message }, '*');
-            window.close();
-          }
+          console.error('Error:', err);
+          navigate('/integraciones?tab=configuraciones');
         });
-    } else {
-      // No hay código, redirigir a inicio
-      navigate('/integraciones');
     }
   }, [location, navigate]);
 

@@ -80,42 +80,57 @@ export const Configuraciones = () => {
     }
   };
 
-  const handleGitHubLogin = () => {
+  // CORREGIDA: Primero obtener la URL de GitHub, luego abrir la ventana
+  const handleGitHubLogin = async () => {
     setGitLoading(true);
+    setError(null);
     
-    // Abrir ventana de autenticación
-    const width = 800;
-    const height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    
-    const popup = window.open(
-      'http://localhost:7009/api/auth/github/login',
-      'github-auth',
-      `width=${width},height=${height},left=${left},top=${top}`
-    );
-    
-    // Escuchar mensajes de la ventana popup
-    const handleMessage = async (event: MessageEvent) => {
-      if (event.origin !== 'http://localhost:7009') return;
+    try {
+      // 1. Obtener la URL de autenticación del backend
+      const response = await fetch('http://localhost:7009/api/auth/github/login');
+      const data = await response.json();
       
-      if (event.data.type === 'github-auth-success') {
-        setGitUser(event.data.user);
-        localStorage.setItem('github_token', event.data.token);
-        setSuccess(`Bienvenido, ${event.data.user.name || event.data.user.login}`);
-        setGitLoading(false);
-        popup?.close();
-        setTimeout(() => setSuccess(null), 3000);
-        window.removeEventListener('message', handleMessage);
-      } else if (event.data.type === 'github-auth-error') {
-        setError(event.data.error);
-        setGitLoading(false);
-        popup?.close();
-        window.removeEventListener('message', handleMessage);
+      if (!data.url) {
+        throw new Error('No se pudo obtener la URL de autenticación');
       }
-    };
-    
-    window.addEventListener('message', handleMessage);
+      
+      // 2. Abrir ventana emergente con la URL de GitHub
+      const width = 800;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        data.url,
+        'github-auth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      
+      // 3. Escuchar mensajes de la ventana popup
+      const handleMessage = (event: MessageEvent) => {
+        // Aceptar mensajes del callback (origin puede ser localhost:3000)
+        if (event.data.type === 'github-auth-success') {
+          setGitUser(event.data.user);
+          localStorage.setItem('github_token', event.data.token);
+          setSuccess(`Bienvenido, ${event.data.user.name || event.data.user.login}`);
+          setGitLoading(false);
+          popup?.close();
+          window.removeEventListener('message', handleMessage);
+          setTimeout(() => setSuccess(null), 3000);
+        } else if (event.data.type === 'github-auth-error') {
+          setError(event.data.error);
+          setGitLoading(false);
+          popup?.close();
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+    } catch (err) {
+      setError('Error al conectar con GitHub');
+      setGitLoading(false);
+    }
   };
 
   const handleGitHubLogout = () => {
@@ -129,7 +144,7 @@ export const Configuraciones = () => {
     <Box>
       <Card sx={{ mb: 3 }}>
         <CardHeader
-          avatar={themeMode === 'dark' ? <Brightness4 /> : <Brightness7 />}
+          avatar={themeMode === 'dark' ? <Brightness4 sx={{ color: '#1976d2' }} /> : <Brightness7 sx={{ color: '#1976d2' }} />}
           title="Apariencia"
           subheader="Personaliza la apariencia de la aplicación"
         />
@@ -147,7 +162,7 @@ export const Configuraciones = () => {
 
       <Card>
         <CardHeader
-          avatar={<GitHub />}
+          avatar={<GitHub sx={{ color: '#1976d2' }} />}
           title="Integración con GitHub"
           subheader="Conecta tu cuenta de GitHub para gestionar repositorios"
         />
@@ -184,14 +199,20 @@ export const Configuraciones = () => {
             </Box>
           )}
 
-          {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
-          {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mt: 2 }} onClose={() => setSuccess(null)}>{success}</Alert>}
+          {error && <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
           <Divider sx={{ my: 2 }} />
           <Typography variant="subtitle2" gutterBottom>Beneficios:</Typography>
           <List dense>
-            <ListItem><ListItemIcon><CheckCircle color="success" /></ListItemIcon><ListItemText primary="Vincular repositorios a integraciones" /></ListItem>
-            <ListItem><ListItemIcon><CheckCircle color="success" /></ListItemIcon><ListItemText primary="Acceder al código desde el inventario" /></ListItem>
+            <ListItem>
+              <ListItemIcon><CheckCircle color="success" /></ListItemIcon>
+              <ListItemText primary="Vincular repositorios a integraciones" />
+            </ListItem>
+            <ListItem>
+              <ListItemIcon><CheckCircle color="success" /></ListItemIcon>
+              <ListItemText primary="Acceder al código desde el inventario" />
+            </ListItem>
           </List>
         </CardContent>
       </Card>

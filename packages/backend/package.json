@@ -45,6 +45,7 @@
     "@backstage/plugin-signals-backend": "^0.3.14",
     "@backstage/plugin-techdocs-backend": "^2.1.7",
     "app": "link:../app",
+    "dotenv": "^17.4.2",
     "node-gyp": "^10.0.0",
     "pg": "^8.11.3"
   },
