@@ -1,14 +1,19 @@
 import { Router } from 'express';
 import axios from 'axios';
+import https from 'https';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Cargar .env desde la ubicación correcta
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
 const REDIRECT_URI = 'http://localhost:3000/auth/github/callback';
+
+// Crear agente HTTPS que ignora certificados autofirmados (solo para desarrollo)
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false
+});
 
 console.log('🔐 [auth.ts] GITHUB_CLIENT_ID:', GITHUB_CLIENT_ID ? '✅ Cargado' : '❌ No encontrado');
 
@@ -34,13 +39,15 @@ export function createAuthRouter(): Router {
     }
 
     try {
+      // Intercambiar código por token con agente HTTPS personalizado
       const tokenResponse = await axios.post('https://github.com/login/oauth/access_token', {
         client_id: GITHUB_CLIENT_ID,
         client_secret: GITHUB_CLIENT_SECRET,
         code: code,
         redirect_uri: REDIRECT_URI,
       }, {
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json' },
+        httpsAgent: httpsAgent  // Ignorar SSL
       });
       
       const accessToken = tokenResponse.data.access_token;
@@ -49,8 +56,10 @@ export function createAuthRouter(): Router {
         throw new Error('No se recibió token de acceso');
       }
       
+      // Obtener información del usuario con agente HTTPS personalizado
       const userResponse = await axios.get('https://api.github.com/user', {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        httpsAgent: httpsAgent  // Ignorar SSL
       });
       
       res.json({
@@ -78,7 +87,8 @@ export function createAuthRouter(): Router {
     
     try {
       const userResponse = await axios.get('https://api.github.com/user', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        httpsAgent: httpsAgent  // Ignorar SSL
       });
       
       res.json({
@@ -91,6 +101,7 @@ export function createAuthRouter(): Router {
         }
       });
     } catch (error) {
+      console.error('Error:', error);
       res.json({ success: true, user: null });
     }
   });
